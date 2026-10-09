@@ -1,0 +1,73 @@
+services:
+  mongo:
+    image: ${MONGO_IMAGE:-mongo:7}
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: ${REDIS_IMAGE:-redis:7-alpine}
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        BASE_IMAGE: ${PYTHON_BASE_IMAGE:-python:3.12-slim}
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/supplychain
+      - REDIS_URL=redis://redis:6379/0
+      - BLOB_ROOT=/data/blobs
+      - WORK_ROOT=/data/work
+      - SCANNER_IMAGE=openmastiff-scanner:dev
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    ports:
+      - "8000:8000"
+    volumes:
+      - blobs:/data/blobs
+      - work:/data/work
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - mongo
+      - redis
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        BASE_IMAGE: ${PYTHON_BASE_IMAGE:-python:3.12-slim}
+    command: ["celery", "-A", "app.worker.celery_app", "worker", "--loglevel=INFO"]
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/supplychain
+      - REDIS_URL=redis://redis:6379/0
+      - BLOB_ROOT=/data/blobs
+      - WORK_ROOT=/data/work
+      - SCANNER_IMAGE=openmastiff-scanner:dev
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - blobs:/data/blobs
+      - work:/data/work
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - mongo
+      - redis
+
+  scanner:
+    build:
+      context: .
+      dockerfile: scanner/Dockerfile
+      args:
+        BASE_IMAGE: ${PYTHON_BASE_IMAGE:-python:3.12-slim}
+    image: openmastiff-scanner:dev
+
+volumes:
+  mongo_data:
+  blobs:
+  work:
+

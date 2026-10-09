@@ -1,0 +1,9 @@
+{
+  "name": "openmastiff-maintenance-demo",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "lodash": "4.17.21",
+    "express": "4.18.2"
+  }
+}

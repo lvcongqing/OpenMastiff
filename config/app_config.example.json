@@ -1,0 +1,39 @@
+{
+  "initialized": false,
+  "auth": {
+    "mode": "http",
+    "ldap": {
+      "server": "ldap://ldap.example.com:389",
+      "bind_username": "cn=readonly,dc=example,dc=com",
+      "bind_password": "",
+      "account_base": "ou=people,dc=example,dc=com",
+      "account_pattern": "(&(objectClass=inetOrgPerson)(uid=${username}))",
+      "account_ssh_username": "uid"
+    }
+  },
+  "roles": {
+    "admins": ["admin"],
+    "default_role": "viewer",
+    "custom_definitions": {
+      "security": {
+        "name_zh": "Security",
+        "permissions": ["review", "read"]
+      }
+    }
+  },
+  "system": {
+    "database": {
+      "mongo_uri": "mongodb://localhost:27017/supplychain",
+      "redis_url": "redis://localhost:6379/8"
+    },
+    "storage": {
+      "blob_root": "/opt/openMastiff/data/blobs",
+      "work_root": "/opt/openMastiff/data/work"
+    },
+    "scanner_mode": "local"
+  },
+  "security": {
+    "jwt_secret": "",
+    "jwt_expire_hours": 8
+  }
+}

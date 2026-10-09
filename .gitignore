@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+.env
+.venv/
+venv/
+
+/data/
+*.log
+
+# Instance secrets — copy from config/app_config.example.json
+config/app_config.json
+
+web/node_modules/
+web/dist/
+web/certs/*.key
+web/certs/*.crt
+

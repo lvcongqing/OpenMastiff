@@ -1,0 +1,34 @@
+{
+  "name": "openmastiff-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "dev": "bash scripts/dev.sh",
+    "dev:stop": "bash scripts/dev-stop.sh",
+    "dev:vite": "vite",
+    "dev:certs": "bash scripts/gen-dev-certs.sh",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "bash scripts/gen-dev-certs.sh && vite preview"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.5.1",
+    "antd": "^5.22.2",
+    "axios": "^1.7.9",
+    "dayjs": "^1.11.13",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "~5.6.2",
+    "vite": "^5.4.11"
+  }
+}
