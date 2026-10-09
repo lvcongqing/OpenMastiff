@@ -16,6 +16,7 @@
   <img src="https://img.shields.io/badge/python-3.8%2B-3776AB" alt="Python 3.8+" />
   <img src="https://img.shields.io/badge/node-18%2B-339933" alt="Node 18+" />
   <img src="https://img.shields.io/badge/ui-zh--CN%20%7C%20en--US-8A2BE2" alt="UI locales" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License: Apache-2.0" /></a>
 </p>
 
 <p align="center">
@@ -197,6 +198,9 @@ The UI ships **Simplified Chinese (`zh-CN`)** and **English (`en-US`)**.
 | [docs/06-api.md](docs/06-api.md) | API draft |
 | [docs/07-wbs-by-domain.md](docs/07-wbs-by-domain.md) | WBS and acceptance notes |
 | [docs/08-mvp-smoke-test.md](docs/08-mvp-smoke-test.md) | Smoke test |
+| [docs/09-docker-offline-or-mirror.md](docs/09-docker-offline-or-mirror.md) | Air-gapped / mirror Docker |
+| [docs/10-local-install.md](docs/10-local-install.md) | Local install |
+| [docs/README.md](docs/README.md) | Docs index (English + [简体中文](docs/zh-CN/README.md)) |
 | [CHANGELOG.md](CHANGELOG.md) | Release history |
 
 ## Releases
@@ -223,8 +227,10 @@ Pin an install to this release with `bash update.sh --revision v0.1.0 -y` after 
 
 ## Contributing
 
-This repository is maintained for internal deployment. Open a change on the project Gerrit remote (`origin`) against `master`. Keep user-facing strings in both `web/src/i18n/zh-CN.ts` and `web/src/i18n/en-US.ts`. Do not commit secrets (`.env`, credentials).
+Pull requests against `main` on [GitHub](https://github.com/lvcongqing/OpenMastiff) are welcome. Keep user-facing strings in both `web/src/i18n/zh-CN.ts` and `web/src/i18n/en-US.ts`. Do not commit secrets (`.env`, `config/app_config.json`, credentials).
 
 ## License
 
-License terms are **not published** in this tree. Ask the maintainers before redistributing binaries or source outside the owning organization.
+Copyright 2026 The OpenMastiff Authors.
+
+Licensed under the [Apache License, Version 2.0](LICENSE). You may not use this project except in compliance with the License.

@@ -1,18 +1,21 @@
-# 一期最小闭环验收（Smoke Test）
+# Phase-1 smoke test
 
-## 前置
+<p align="right"><b>English</b> · <a href="zh-CN/08-mvp-smoke-test.md">简体中文</a></p>
 
-- 本机已启动：
-  - Redis（本项目默认使用 `redis://localhost:6379/8`）
-  - MongoDB（监听 `127.0.0.1:27017` 或本机可达）
-  - API（默认 `0.0.0.0:18000`）
-  - worker（Celery）
+## Prerequisites
 
-> 本机启动方式见 `README.md` 与 `docs/10-local-install.md`。
+Running locally:
 
-## 用例：upload → submit → scan_run → Gate → 状态路由
+- Redis (this project defaults to `redis://localhost:6379/8`)
+- MongoDB (listening on `127.0.0.1:27017` or otherwise reachable)
+- API (default `0.0.0.0:18000`)
+- worker (Celery)
 
-1）创建引入单（Draft）
+> How to start locally: `README.md` and `docs/10-local-install.md`.
+
+## Case: upload → submit → scan_run → Gate → status routing
+
+1) Create an intake request (Draft)
 
 ```bash
 curl -sS -X POST http://localhost:18000/requests \
@@ -27,60 +30,60 @@ curl -sS -X POST http://localhost:18000/requests \
   }'
 ```
 
-记录返回的 `request_id`。
+Record the returned `request_id`.
 
-2）准备一个最小 zip（任意内容即可）
+2) Build a tiny zip (any content is fine)
 
 ```bash
 mkdir -p /tmp/sc-demo && echo "hello" > /tmp/sc-demo/README.txt
 cd /tmp && zip -r sc-demo.zip sc-demo >/dev/null
 ```
 
-3）上传源码包
+3) Upload the archive
 
 ```bash
 curl -sS -X POST "http://localhost:18000/requests/${request_id}/source/upload" \
   -F "artifact_file=@/tmp/sc-demo.zip"
 ```
 
-4）提交触发扫描
+4) Submit to start a scan
 
 ```bash
 curl -sS -X POST "http://localhost:18000/requests/${request_id}/submit"
 ```
 
-记录返回的 `scan_run_id`。
+Record the returned `scan_run_id`.
 
-5）查询 scan_run（直到 `status` 变为 succeeded/failed）
+5) Poll the `scan_run` until `status` is succeeded or failed
 
 ```bash
 curl -sS "http://localhost:18000/scan-runs/${scan_run_id}"
 ```
 
-6）查询引入单路由结果（应进入 Reviewing / Blocked / LegalReviewing）
+6) Read request routing (should land in Reviewing / Blocked / LegalReviewing)
 
 ```bash
 curl -sS "http://localhost:18000/requests/${request_id}"
 ```
 
-## 预期
+## Expected
 
-- `scan_runs.outputs` 至少包含 `summary.json` 与 `license.json`；安装 syft 后还应包含 `sbom.cdx.json` / `sbom.spdx.json`
-- 识别到 Python/Java/Rust/JS/TS 时还应有 `bandit.json` / `pmd.json` / `cargo-audit.json` / `eslint.json`，且 High>0 默认 Gate Fail（与 gosec 一致）
-- 未识别到的语言不落盘对应报告（纯 Rust 仓库不应出现 gosec/bandit/pmd/eslint 文件）
-- `scan_runs.gate_status` 出现（Pass/Fail/PendingLegal）
-- `review_requests.status` 从 Submitted → Scanning，再路由到 Reviewing/Blocked/LegalReviewing
+- `scan_runs.outputs` includes at least `summary.json` and `license.json`; with Syft installed also `sbom.cdx.json` / `sbom.spdx.json`
+- Detected Python / Java / Rust / JS / TS also produce `bandit.json` / `pmd.json` / `cargo-audit.json` / `eslint.json`; High > 0 defaults to Gate Fail (same as gosec)
+- Languages that were not detected do not write a stub report (a pure Rust repo must not contain gosec / bandit / pmd / eslint files)
+- `scan_runs.gate_status` is set (Pass / Fail / PendingLegal)
+- `review_requests.status` moves Submitted → Scanning, then routes to Reviewing / Blocked / LegalReviewing
 
-## 提示（避免环境干扰）
+## Tips (avoid host interference)
 
-- 若机器上有其他 Celery 也在用 Redis，请确保本项目使用独立 DB（默认 `/8`）。
-- 不建议对 Redis DB 执行 `flushdb`（会影响 Celery 内部状态与结果回写）。
+- If other Celery apps share Redis, keep this project on its own DB (default `/8`).
+- Do not `flushdb` that Redis DB (it breaks Celery internals and result write-back).
 
-## 批量创建与扫描并发
+## Batch create and scan concurrency
 
-1）管理员在 **策略配置 → 扫描运行 → 扫描队列并发数** 设为 1–64（默认 2）并保存。
+1) On **Policy → Scan runner → Scan queue concurrency**, set 1–64 (default 2) and save.
 
-2）下载模板并解析（无行数上限）：
+2) Download and parse a template (no row cap):
 
 ```bash
 curl -sS -H "Authorization: Bearer $TOKEN" \
@@ -90,7 +93,7 @@ curl -sS -H "Authorization: Bearer $TOKEN" \
   http://localhost:18000/requests/batch/parse
 ```
 
-3）确认创建（默认立即提交扫描）：
+3) Confirm create (default: submit scans immediately):
 
 ```bash
 curl -sS -X POST http://localhost:18000/requests/batch \
@@ -98,42 +101,41 @@ curl -sS -X POST http://localhost:18000/requests/batch \
   -d '{"submit":true,"items":[{"project":"batch-demo","purpose":"smoke","repo_url":"https://github.com/debug-js/debug.git","ref":"master"}]}'
 ```
 
-预期：返回 `created[].status=Submitted` 与 `scan_run_id`；超出并发的扫描保持 `queued`，槽位释放后自动续跑。
+Expected: `created[].status=Submitted` plus `scan_run_id`; scans beyond the concurrency cap stay `queued` and resume when a slot frees.
 
-## 维护性审查（活跃度）验证
+## Maintainability (activity) check
 
-一键刷新测试环境（合并 `maintenance` 策略、重启 API/Worker、生成演示 zip）：
+Refresh a test environment (merge `maintenance` policy, restart API / Worker, build a demo zip):
 
 ```bash
 bash scripts/refresh-test-env.sh
 ```
 
-演示包路径：`/tmp/openmastiff-test/maintenance-demo.zip`（源目录 `test-fixtures/maintenance-demo/`，含 `go.mod` + `package.json`）。
+Demo archive: `/tmp/openmastiff-test/maintenance-demo.zip` (source `test-fixtures/maintenance-demo/`, with `go.mod` + `package.json`).
 
-### UI 查看
+### UI
 
-1. 打开前端 `https://<主机>/`（HTTP :80 会跳转至 HTTPS :443），使用 LDAP 账号登录。
-2. **策略配置**：JSON 中应包含 `maintenance` 段（`enabled: true`）。
-3. **新建引入单**：`business_criticality` 建议选 `medium` 或 `high`。
-4. 上传 `maintenance-demo.zip`，或 Git 源 `https://github.com/gorilla/mux` + `main`。
-5. **提交**触发扫描，等待状态离开 `Scanning`。
-6. 进入详情 → **扫描** Tab：
-   - 「项目维护性（活跃度）」：上游评分、Gate、风险依赖表
-   - 可下载 `maintenance.json`
-   - 若有风险项，会出现「维护性 Findings」
+1. Open `https://<host>/` (HTTP :80 redirects to HTTPS :443) and sign in (LDAP or local).
+2. **Policy**: JSON should include a `maintenance` block (`enabled: true`).
+3. **New request**: prefer `business_criticality` `medium` or `high`.
+4. Upload `maintenance-demo.zip`, or Git `https://github.com/gorilla/mux` + `main`.
+5. **Submit**, wait until status leaves `Scanning`.
+6. Detail → **Scans** tab:
+   - “Project maintainability (activity)”: upstream scores, Gate, risky-dependency table
+   - Download `maintenance.json`
+   - Risky items show “Maintainability findings”
 
-### 预期
+### Expected
 
-- `summary.json` 含 `maintenance` 与 `gate.maintenance`
-- `gate.overall` 会合并 scanner 与 maintenance 结果（取更严）
-- Worker 需能访问 GitHub / Gitee / AtomGit / GitLab / kernel.org / PyPI / npm / crates.io / Debian 等（内网无外网时可暂时在策略中设 `maintenance.enabled: false`）
+- `summary.json` contains `maintenance` and `gate.maintenance`
+- `gate.overall` merges scanner and maintenance (stricter wins)
+- The worker needs GitHub / Gitee / AtomGit / GitLab / kernel.org / PyPI / npm / crates.io / Debian (or set `maintenance.enabled: false` on an isolated network)
 
-## CVE / 依赖漏洞（Grype）
+## CVE / dependency vulnerabilities (Grype)
 
-1. 本机已安装 `grype`（`install.sh` pin `v0.119.0`）且 `GRYPE_DB_CACHE_DIR` 下有有效漏洞库。
-2. 提交扫描后，`scan_runs.outputs` 应包含 `cve.json`（schema `openmastiff.sca.v1`），可选原始 `cve.grype.json`。
-3. `summary.json.tools.cve` 有 counts / engines / status；`gate.cve` 为 pass 或 fail。
-4. Critical/High 默认阈值均为 0：任一 Critical 或 High 会使 `gate.overall=Fail`。
-5. 详情 **概览** 有 CVE 行；**扫描** Tab 可解读 `cve.json`。策略页可开关引擎（当前实现 `grype`，`trivy` / `osv-scanner` 预留为 skipped）。
-6. 复测可对 `openeuler/skills` 等已有引入单触发 `POST /requests/{id}/trigger-scan`。
-
+1. Host has `grype` (`install.sh` pins `v0.119.0`) and a valid DB under `GRYPE_DB_CACHE_DIR`.
+2. After submit, `scan_runs.outputs` includes `cve.json` (schema `openmastiff.sca.v1`) and optionally raw `cve.grype.json`.
+3. `summary.json.tools.cve` has counts / engines / status; `gate.cve` is pass or fail.
+4. Critical / High thresholds default to 0: any Critical or High makes `gate.overall=Fail`.
+5. Detail **Overview** shows a CVE row; the **Scans** tab interprets `cve.json`. Policy can toggle engines (implemented: `grype`; `trivy` / `osv-scanner` reserved as skipped).
+6. Rescan an existing request such as `openeuler/skills` with `POST /requests/{id}/trigger-scan`.

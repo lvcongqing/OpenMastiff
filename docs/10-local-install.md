@@ -1,55 +1,57 @@
-# 本机安装与启动（UOS Server 20 / yum|dnf）
+# Local install (UOS Server 20 / yum | dnf)
+
+<p align="right"><b>English</b> · <a href="zh-CN/10-local-install.md">简体中文</a></p>
 
 ## 1) Redis
 
-你已安装并运行，确认：
+Confirm it is running:
 
 ```bash
 redis-cli ping
 ```
 
-返回 `PONG` 即可。
+`PONG` is enough.
 
-说明：本项目默认使用 `redis://localhost:6379/8` 作为 Celery broker/result（避免与其他 Celery 冲突）。
+This project defaults to `redis://localhost:6379/8` as the Celery broker / result backend (avoids clashing with other Celery apps).
 
-## 2) MongoDB（repo 源安装）
+## 2) MongoDB (from a yum repo)
 
-> 不同 repo 的包名可能是 `mongodb` / `mongodb-server` / `mongo` / `mongod` 等；请以 `yum search` 结果为准。
+> Package names vary: `mongodb` / `mongodb-server` / `mongo` / `mongod`. Use `yum search`.
 
-搜索：
+Search:
 
 ```bash
 yum search mongodb
 ```
 
-安装（示例）：
+Install (example):
 
 ```bash
 yum install -y mongodb mongodb-server || yum install -y mongodb-server || yum install -y mongodb
 ```
 
-启动：
+Start:
 
 ```bash
 systemctl enable --now mongod || systemctl enable --now mongodb || true
 systemctl status mongod --no-pager || systemctl status mongodb --no-pager || true
 ```
 
-验证端口：
+Check the port:
 
 ```bash
 ss -lntp | grep 27017 || true
 ```
 
-## 3) Python 依赖
+## 3) Python dependencies
 
 ```bash
 python3 -m pip install -r backend/requirements.txt
 ```
 
-## 4) 启动
+## 4) Start
 
-两个终端分别启动：
+Two terminals:
 
 ```bash
 bash backend/run_worker.sh
@@ -59,15 +61,14 @@ bash backend/run_worker.sh
 bash backend/run_api.sh
 ```
 
-默认 API 端口为 `18000`（可通过 `API_PORT` 覆盖）。
+API port defaults to `18000` (`API_PORT` overrides).
 
-（可选）启动定时任务（豁免到期回流等）：
+Optional periodic jobs (waiver expiry, …):
 
 ```bash
 bash backend/run_beat.sh
 ```
 
-## 5) 跑通最小闭环
+## 5) Smoke the loop
 
-见 `docs/08-mvp-smoke-test.md`。
-
+See `docs/08-mvp-smoke-test.md`.

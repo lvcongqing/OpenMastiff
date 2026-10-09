@@ -1,18 +1,20 @@
-# 数据模型（MongoDB）与索引（一期）
+# Data model (MongoDB) and indexes (phase 1)
 
-## 集合
+<p align="right"><b>English</b> · <a href="zh-CN/05-data-model.md">简体中文</a></p>
+
+## Collections
 
 ### review_requests
 
-- `status`：状态机
-- `gate_status`：Pass/Fail/PendingLegal
-- `project/environment/purpose/criticality/exposure/rollback_plan`
-- `source_id`：输入工件引用
+- `status`: state machine
+- `gate_status`: Pass / Fail / PendingLegal
+- `project` / `environment` / `purpose` / `criticality` / `exposure` / `rollback_plan`
+- `source_id`: input artifact reference
 - `latest_scan_run_id`
-- `decision`：评审结论快照引用（blob）
-- `created_by/owner/created_at/updated_at`
+- `decision`: snapshot of the review conclusion (blob)
+- `created_by` / `owner` / `created_at` / `updated_at`
 
-索引：
+Indexes:
 
 - `(status, updated_at)`
 - `(project, status)`
@@ -20,87 +22,86 @@
 
 ### sources
 
-- `type`：upload/git
-- upload：`filename/size/sha256/blob_id`
-- git：`repo_url/ref/credential_id/commit_hash/workspace_sha256`
+- `type`: upload / git
+- upload: `filename` / `size` / `sha256` / `blob_id`
+- git: `repo_url` / `ref` / `credential_id` / `commit_hash` / `workspace_sha256`
 
-索引：
+Indexes:
 
-- upload：`(sha256)` 唯一
-- git：`(repo_url, ref, commit_hash)`
+- upload: unique `(sha256)`
+- git: `(repo_url, ref, commit_hash)`
 
 ### scan_runs
 
-- `request_id/source_id`
-- `status`：queued/running/succeeded/failed/timeout
-- `input_hash/policy_hash`
-- `docker`：image/container_id/limits/network_mode
-- `outputs`：各报告的 blob 引用
-- `started_at/ended_at/exit_code`
+- `request_id` / `source_id`
+- `status`: queued / running / succeeded / failed / timeout
+- `input_hash` / `policy_hash`
+- `docker`: image / container_id / limits / network_mode
+- `outputs`: blob refs for each report
+- `started_at` / `ended_at` / `exit_code`
 
-索引：
+Indexes:
 
 - `(request_id, started_at desc)`
 - `(status, started_at)`
 
 ### findings
 
-- `request_id/scan_run_id`
-- `type`：gosec/cppcheck/license
-- `severity/rule_id/fingerprint`
-- `location`：file/line
+- `request_id` / `scan_run_id`
+- `type`: gosec / cppcheck / license
+- `severity` / `rule_id` / `fingerprint`
+- `location`: file / line
 - `message`
-- `disposition`：open / false_positive / accepted_risk / confirmed（复测按 fingerprint 保留）
+- `disposition`: open / false_positive / accepted_risk / confirmed (kept across rescans by fingerprint)
 
-索引：
+Indexes:
 
 - `(scan_run_id, severity)`
-- 可选唯一：`(scan_run_id, fingerprint)`
+- optional unique: `(scan_run_id, fingerprint)`
 
 ### gate_results
 
-- `request_id/scan_run_id`
-- `license_gate/gosec_gate/cppcheck_gate/overall`
+- `request_id` / `scan_run_id`
+- `license_gate` / `gosec_gate` / `cppcheck_gate` / `overall`
 
-索引：
+Indexes:
 
 - `(request_id, scan_run_id)`
 
 ### legal_reviews / remediations / waivers
 
-按请求关联，略。
+Keyed by request; details omitted here.
 
 ### evidence_blobs
 
-- `sha256`（全局去重）
-- `kind`：source/report/summary/policy/decision/legal/export/other
-- `path`：本地卷路径
-- `bytes/content_type/created_at/created_by`
-- `request_id/scan_run_id`（可选关联）
+- `sha256` (global dedup)
+- `kind`: source / report / summary / policy / decision / legal / export / other
+- `path`: local volume path
+- `bytes` / `content_type` / `created_at` / `created_by`
+- `request_id` / `scan_run_id` (optional)
 
-索引：
+Indexes:
 
-- `(sha256)` 唯一
+- unique `(sha256)`
 - `(request_id, created_at)`
 
-### audit_logs（不可变）
+### audit_logs (immutable)
 
 - `request_id`
-- `ts`、`seq`
+- `ts`, `seq`
 - `actor_id`
 - `event_type`
-- `payload`（变更摘要）
-- `prev_hash`、`hash`
+- `payload` (change summary)
+- `prev_hash`, `hash`
 
-索引：
+Indexes:
 
 - `(request_id, ts)`
 - `(actor_id, ts)`
 - `(event_type, ts)`
 
-## 不可变策略（一期）
+## Immutability (phase 1)
 
-- DB 权限：应用账号对 `audit_logs` 禁止 update/delete；仅允许 insert。
-- hash 链：同一 request_id 维度形成 `prev_hash -> hash` 链；导出时校验。
-- 快照引用：policy/summary/原始报告/法务结论/最终结论等全部写 blob 并用 sha256 引用，避免“覆盖历史”。
-
+- DB privileges: the app account cannot update or delete `audit_logs`; insert only.
+- Hash chain: `prev_hash -> hash` per `request_id`; verified on export.
+- Snapshot refs: policy / summary / raw reports / legal conclusion / final decision are stored as blobs and referenced by SHA-256 so history is never overwritten.

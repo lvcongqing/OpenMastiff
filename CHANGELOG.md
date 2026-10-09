@@ -13,6 +13,11 @@ How to cut a release:
 
 ## [Unreleased]
 
+### Added
+
+- Apache License 2.0 (`LICENSE`).
+- English copies of phase-1 design docs under `docs/`, with Simplified Chinese moved to `docs/zh-CN/`.
+
 ## [0.1.0] - 2026-10-09
 
 First tagged release of the open-source dependency **intake review loop**.

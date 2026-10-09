@@ -1,38 +1,40 @@
-# Docker 受限网络启动指南（内网镜像/离线镜像）
+# Docker on a restricted network (intranet mirror / offline images)
 
-当环境无法访问 Docker Hub（例如连不上 `registry-1.docker.io`）时，可以用以下任一方式启动一期服务。
+<p align="right"><b>English</b> · <a href="zh-CN/09-docker-offline-or-mirror.md">简体中文</a></p>
 
-## 方式 1：配置 Docker 镜像加速/内网镜像源（推荐）
+When the host cannot reach Docker Hub (for example `registry-1.docker.io` is blocked), use one of the following to start phase-1 services.
 
-在 `/etc/docker/daemon.json` 配置镜像加速或内网镜像源（示例）：
+## Option 1: registry mirror (recommended)
+
+Set a pull-through cache or intranet mirror in `/etc/docker/daemon.json`:
 
 ```json
 {
-  "registry-mirrors": ["https://<你的镜像加速器域名>"]
+  "registry-mirrors": ["https://<your-mirror-host>"]
 }
 ```
 
-应用配置并重启：
+Apply and restart:
 
 ```bash
 systemctl restart docker
 ```
 
-然后启动：
+Then start:
 
 ```bash
 docker compose up -d --build
 ```
 
-## 方式 2：使用内网镜像仓库前缀（不改 daemon）
+## Option 2: image prefix without changing the daemon
 
-本仓库 `docker-compose.yml` 支持通过环境变量指定镜像：
+`docker-compose.yml` in this repo accepts:
 
 - `MONGO_IMAGE`
 - `REDIS_IMAGE`
 - `PYTHON_BASE_IMAGE`
 
-示例（把 Docker Hub 镜像替换为你们内网仓库镜像）：
+Example (replace Docker Hub with an internal registry):
 
 ```bash
 export MONGO_IMAGE=registry.example.com/library/mongo:7
@@ -42,9 +44,9 @@ export PYTHON_BASE_IMAGE=registry.example.com/library/python:3.12-slim
 docker compose up -d --build
 ```
 
-## 方式 3：离线导入镜像（air-gap）
+## Option 3: air-gap import
 
-在可联网机器上拉取并导出：
+On a machine that can pull images:
 
 ```bash
 docker pull mongo:7
@@ -54,10 +56,9 @@ docker pull python:3.12-slim
 docker save -o images.tar mongo:7 redis:7-alpine python:3.12-slim
 ```
 
-把 `images.tar` 拷贝到受限机器后导入：
+Copy `images.tar` to the restricted host and load:
 
 ```bash
 docker load -i images.tar
 docker compose up -d --build
 ```
-

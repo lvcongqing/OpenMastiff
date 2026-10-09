@@ -16,6 +16,7 @@
   <img src="https://img.shields.io/badge/python-3.8%2B-3776AB" alt="Python 3.8+" />
   <img src="https://img.shields.io/badge/node-18%2B-339933" alt="Node 18+" />
   <img src="https://img.shields.io/badge/ui-zh--CN%20%7C%20en--US-8A2BE2" alt="界面语言" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="许可证: Apache-2.0" /></a>
 </p>
 
 <p align="center">
@@ -197,6 +198,9 @@ docker compose up -d --build
 | [docs/06-api.md](docs/06-api.md) | API 草案 |
 | [docs/07-wbs-by-domain.md](docs/07-wbs-by-domain.md) | 功能域 WBS |
 | [docs/08-mvp-smoke-test.md](docs/08-mvp-smoke-test.md) | 冒烟测试 |
+| [docs/09-docker-offline-or-mirror.md](docs/09-docker-offline-or-mirror.md) | 离线 / 镜像 Docker |
+| [docs/10-local-install.md](docs/10-local-install.md) | 本机安装 |
+| [docs/README.md](docs/README.md) | 文档目录（英文 + [简体中文](docs/zh-CN/README.md)） |
 | [CHANGELOG.md](CHANGELOG.md) | 版本历史 |
 
 ## 版本发布
@@ -223,8 +227,10 @@ docker compose up -d --build
 
 ## 贡献
 
-本仓库面向内部部署。请向项目 Gerrit 远程（`origin`）的 `master` 提交变更。用户可见文案须同时更新 `web/src/i18n/zh-CN.ts` 与 `web/src/i18n/en-US.ts`。不要提交密钥（`.env`、凭据文件）。
+欢迎向 GitHub 仓库 [OpenMastiff](https://github.com/lvcongqing/OpenMastiff) 的 `main` 分支提交 Pull Request。用户可见文案须同时更新 `web/src/i18n/zh-CN.ts` 与 `web/src/i18n/en-US.ts`。不要提交密钥（`.env`、`config/app_config.json`、凭据文件）。
 
 ## 许可证
 
-本仓库**未发布**许可证文件。向组织外分发源码或制品前，请先联系维护者。
+Copyright 2026 The OpenMastiff Authors.
+
+采用 [Apache License, Version 2.0](LICENSE) 授权。使用本项目须遵守该许可证。

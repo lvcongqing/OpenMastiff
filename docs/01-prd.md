@@ -1,108 +1,109 @@
-# 一期 PRD（字段级）
+# Phase-1 PRD (field-level)
 
-## 目标与范围
+<p align="right"><b>English</b> · <a href="zh-CN/01-prd.md">简体中文</a></p>
 
-- **目标**：将“开源依赖引入/升级”的安全合规审查做成可配置门禁、可追溯证据链、可闭环整改的系统。
-- **一期范围**：仅系统内置执行扫描（不支持外部自跑报告上传）。
-- **技术栈**：Python + NoSQL(MongoDB) + Redis + Docker（runner 容器沙箱）。
+## Goal and scope
 
-## 角色与权限（默认）
+- **Goal**: Turn open-source dependency intake/upgrade into a configurable gate, an auditable evidence chain, and a closed remediation loop.
+- **Phase 1**: Scans run inside the platform only (no upload of externally produced reports).
+- **Stack**: Python + MongoDB + Redis + Docker (scanner sandbox).
 
-- **申请方**：创建/编辑草稿、提交、查看本项目单据、发起复测、补充材料
-- **供应链安全**：评审结论、配置策略、发起法务复核、发起/关闭整改、豁免
-- **法务**：处理法务复核、出具结论、上传依据
-- **审计只读**：查看、导出证据包
-- **管理员**：用户/角色/项目域/凭据库管理
+## Roles and permissions (defaults)
 
-## 状态机
+- **Requester**: create/edit drafts, submit, view own project requests, rescan, attach materials
+- **Supply-chain security**: review decisions, edit policy, start legal review, open/close remediations, waive
+- **Legal**: handle license review, record allow/deny, upload rationale
+- **Audit (read-only)**: view and export evidence packs
+- **Admin**: users, roles, project domains, credential store
+
+## State machine
 
 - `Draft` → `Submitted` → `Scanning` → `Reviewing`
-- `Reviewing` 分支：
-  - `LegalReviewing`（PendingLegal）
-  - `Blocked`（GateFail）
+- From `Reviewing`:
+  - `LegalReviewing` (`PendingLegal`)
+  - `Blocked` (`GateFail`)
   - `Approved` / `ConditionalApproved`
   - `Rejected` / `Waived`
 - `ConditionalApproved` → `Remediating` → `ReReview` → `Approved`
-- `Waived` 到期：自动回流 `ReReview`（或策略指定 `Blocked`）
+- Expired `Waived`: auto-return to `ReReview` (or `Blocked` if policy says so)
 
-**约束**
+**Constraints**
 
-- 存在 `GateFail`：禁止 `Approved/ConditionalApproved`
-- 存在 `PendingLegal` 且法务未 Allow：禁止 `Approved/ConditionalApproved`
-- `ConditionalApproved`：必须包含 ≥1 `remediation_item`
+- `GateFail` forbids `Approved` / `ConditionalApproved`
+- `PendingLegal` without legal Allow forbids `Approved` / `ConditionalApproved`
+- `ConditionalApproved` requires ≥1 `remediation_item`
 
-## 页面与字段
+## Pages and fields
 
-### 1）引入单列表（Requests）
+### 1) Requests list
 
-- 展示：`request_id`、`title`、`status`、`gate_status`（Pass/Fail/PendingLegal）、`risk_level`
-- 展示：`project`、`owner`、`created_by`、`updated_at`
-- 筛选：状态、Gate、风险、项目、创建人、时间
-- 操作：新建、查看、导出（有权限）
+- Columns: `request_id`, `title`, `status`, `gate_status` (Pass/Fail/PendingLegal), `risk_level`
+- Also: `project`, `owner`, `created_by`, `updated_at`
+- Filters: status, gate, risk, project, creator, time
+- Actions: new, view, export (if permitted)
 
-### 2）新建引入单（New Request）
+### 2) New request
 
-**基础信息（必填）**
+**Required basics**
 
-- `project`：项目/系统
-- `environment`：dev/stage/prod/other
-- `purpose`：用途说明
-- `business_criticality`：low/medium/high/critical
-- `exposure`：internal/public
-- `rollback_plan`：回滚方案
+- `project`: project / system
+- `environment`: dev/stage/prod/other
+- `purpose`
+- `business_criticality`: low/medium/high/critical
+- `exposure`: internal/public
+- `rollback_plan`
 
-**输入工件（提交后锁定，二选一）**
+**Input artifact (locked after submit; pick one)**
 
 - `source_type=upload`
-  - `artifact_file`：zip/tar.gz（大小上限、后缀白名单）
+  - `artifact_file`: zip/tar.gz (size cap, suffix allowlist)
 - `source_type=git`
-  - `repo_url`、`ref`（branch/tag/commit）
-  - `credential_id`（token/ssh key 引用）
+  - `repo_url`, `ref` (branch/tag/commit)
+  - `credential_id` (token / SSH key reference)
 
-**扫描范围（默认 auto）**
+**Scan scope (default `auto`)**
 
-- `scan_scope.mode`：`auto` / `include_paths`
-- `scan_scope.include_paths[]`（仅 include_paths）
+- `scan_scope.mode`: `auto` / `include_paths`
+- `scan_scope.include_paths[]` (when `include_paths`)
 
-**网络策略（默认 none，仅审核人可覆盖）**
+**Network policy (default `none`; reviewers only may override)**
 
-- `runner.network_mode_override`：`none` / `allowlist`
+- `runner.network_mode_override`: `none` / `allowlist`
 - `runner.network_allowlist_snapshot[]`
 
-操作：保存草稿 / 提交（触发扫描）
+Actions: save draft / submit (starts a scan)
 
-### 3）引入单详情（Request Detail）
+### 3) Request detail
 
-Tab：
+Tabs:
 
-- 概览：基本信息、状态、Gate 总结、结论
-- 输入工件：upload sha256 或 git commit + workspace sha256
-- 扫描结果：最新 `scan_run` 摘要 + 原始报告下载 + 历史 runs
-- 法务复核：状态、结论、附件
-- 整改项：列表、责任人、截止、关联 fingerprints、复测
-- 审计与证据：审计时间线、证据对象、导出 zip
+- Overview: metadata, status, gate summary, decision
+- Input: upload sha256 or git commit + workspace sha256
+- Scans: latest `scan_run` summary, raw reports, history
+- Legal: status, decision, attachments
+- Remediation: list, owner, due date, fingerprints, rescan
+- Audit: timeline, evidence objects, zip export
 
-### 4）评审工作台（Review Inbox）
+### 4) Review inbox
 
-- 待办：Reviewing / Blocked / PendingLegal
-- 快捷操作：通过/条件通过/拒绝/豁免
+- Queue: Reviewing / Blocked / PendingLegal
+- Actions: pass / conditional / reject / waive
 
-### 5）策略配置（Policies）
+### 5) Policy
 
-- License：deny_list、legal_review_list、unknown_policy、score_threshold
-- gosec：High 阈值（默认 High>0 阻断）
-- cppcheck：error 阈值（默认 error>0 阻断）
-- 豁免：有效期上限、必填字段
-- runner：默认网络策略、默认排除目录、工具超时
+- License: deny_list, legal_review_list, unknown_policy, score_threshold
+- gosec: High threshold (default High > 0 blocks)
+- cppcheck: error threshold (default error > 0 blocks)
+- Waiver: max days, required fields
+- Runner: default network, exclude dirs, tool timeouts
 
-### 6）凭据库（Credentials）
+### 6) Credentials
 
-- 类型：`http_token` / `ssh_key`
-- 字段：名称、用途、repo 范围（可选）、创建人、更新时间
+- Types: `http_token` / `ssh_key`
+- Fields: name, purpose, optional repo scope, creator, updated_at
 
-## 证据链要求（一期必做）
+## Evidence chain (phase-1 required)
 
-- 每个 `scan_run` 固化：输入哈希、策略快照哈希、工具版本、命令、原始报告、summary
-- 关键操作写入审计日志（不可变 + hash 链）
-- 支持导出证据包 zip（含 hashes.json 与链校验）
-
+- Each `scan_run` freezes: input hash, policy snapshot hash, tool versions, command, raw reports, summary
+- Critical actions append to the audit log (immutable + hash chain)
+- Evidence-pack zip export (`hashes.json` + chain verification)
