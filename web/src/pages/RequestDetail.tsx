@@ -14,7 +14,9 @@ import {
   Typography,
   message,
 } from "antd";
+import { CodeOutlined } from "@ant-design/icons";
 import ScanReportsMenu from "../components/ScanReportsMenu";
+import ScanConsoleDrawer, { isLiveScanStatus } from "../components/ScanConsoleDrawer";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
@@ -117,10 +119,11 @@ export default function RequestDetail() {
   const [rForm] = Form.useForm();
   const [editOpen, setEditOpen] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
+  const [consoleRunId, setConsoleRunId] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (opts?: { quiet?: boolean }) => {
     if (!requestId) return;
-    setLoading(true);
+    if (!opts?.quiet) setLoading(true);
     try {
       const bundle = await getRequest(requestId);
       setReq(bundle.request);
@@ -143,9 +146,9 @@ export default function RequestDetail() {
     } catch {
       message.error(t("request.loadFail"));
     } finally {
-      setLoading(false);
+      if (!opts?.quiet) setLoading(false);
     }
-  }, [requestId]);
+  }, [requestId, t]);
 
   useEffect(() => {
     refresh();
@@ -154,7 +157,7 @@ export default function RequestDetail() {
   useEffect(() => {
     if (req?.status !== "Scanning") return;
     const timer = window.setInterval(() => {
-      refresh();
+      void refresh({ quiet: true });
     }, 3000);
     return () => clearInterval(timer);
   }, [req?.status, refresh]);
@@ -181,6 +184,7 @@ export default function RequestDetail() {
   const meRoles = getAuthUser()?.roles || (getAuthUser()?.role ? [String(getAuthUser()?.role)] : []);
   const myReviewRoles = requiredReviewRoles.filter((r) => meRoles.includes(r));
   const canDisposeFindings = canManage || myReviewRoles.length > 0 || meRoles.includes("quality_manager");
+  const hasLiveScan = runs.some((row) => isLiveScanStatus(row.status));
   const roleTagKeys = [
     ...new Set([
       ...requiredReviewRoles,
@@ -406,6 +410,29 @@ export default function RequestDetail() {
                         </span>
                       ),
                     },
+                    ...(hasLiveScan
+                      ? [
+                          {
+                            title: t("request.console"),
+                            key: "console",
+                            width: 108,
+                            fixed: "right" as const,
+                            render: (_: unknown, row: Record<string, unknown>) =>
+                              isLiveScanStatus(row.status) ? (
+                                <Button
+                                  size="small"
+                                  icon={<CodeOutlined />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setConsoleRunId(String(row.scan_run_id));
+                                  }}
+                                >
+                                  {t("request.console")}
+                                </Button>
+                              ) : null,
+                          },
+                        ]
+                      : []),
                   ]}
                 />
               </Card>
@@ -546,6 +573,14 @@ export default function RequestDetail() {
         onSaved={() => {
           setEditOpen(false);
           refresh();
+        }}
+      />
+      <ScanConsoleDrawer
+        scanRunId={consoleRunId}
+        open={Boolean(consoleRunId)}
+        onClose={() => setConsoleRunId(null)}
+        onEnded={() => {
+          void refresh({ quiet: true });
         }}
       />
     </div>

@@ -53,6 +53,8 @@ The local API default port is `18000` (see `backend/run_api.sh`).
   - Trigger a rescan (new `scan_run`)
 - `GET /scan-runs/{scan_run_id}`
   - `scan_run` metadata + summary
+- `GET /scan-runs/{scan_run_id}/console`
+  - Tail of workspace `logs.txt` while the run is `queued` or `running`; `live=false` means the job has finished
 - `GET /scan-runs/{scan_run_id}/artifacts/{name}`
   - Download or view outputs: `summary.json`, `license.json`, `sbom.*`, `cve.json`, `logs.txt`, plus language reports actually produced (Go → `gosec.json`, C/C++ → `cppcheck.xml`, Python → `bandit.json`, Java → `pmd.json`, Rust → `cargo-audit.json`, JS/TS → `eslint.json`)
   - Web path: `/requests/{request_id}/scans/{scan_run_id}`; `?report=` selects the current report file

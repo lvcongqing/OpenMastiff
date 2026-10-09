@@ -17,6 +17,7 @@ How to cut a release:
 
 - Apache License 2.0 (`LICENSE`).
 - English copies of phase-1 design docs under `docs/`, with Simplified Chinese moved to `docs/zh-CN/`.
+- Live scan console on in-progress scan rows (`GET /scan-runs/{id}/console`); the button is removed when the run succeeds or fails.
 
 ## [0.1.0] - 2026-10-09
 

@@ -148,6 +148,19 @@ export async function getScanRun(scanRunId: string) {
   return data as Record<string, unknown>;
 }
 
+export async function getScanConsole(scanRunId: string) {
+  const { data } = await api.get(`/scan-runs/${scanRunId}/console`);
+  return data as {
+    scan_run_id: string;
+    request_id: string;
+    status: string;
+    live: boolean;
+    text: string;
+    bytes: number;
+    truncated: boolean;
+  };
+}
+
 export function artifactUrl(scanRunId: string, name: string) {
   const base = baseURL();
   const path = `/scan-runs/${scanRunId}/artifacts/${encodeURIComponent(name)}`;

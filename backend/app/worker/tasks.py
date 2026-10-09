@@ -743,6 +743,16 @@ def start_scan(self, scan_run_id: str) -> None:
         _ensure_empty_dir(output_dir)
         _ensure_empty_dir(policy_dir)
 
+        log_file = output_dir / "logs.txt"
+
+        def _note(msg: str) -> None:
+            with log_file.open("a", encoding="utf-8") as f:
+                f.write("%s %s\n" % (time.strftime("%H:%M:%S"), msg))
+                f.flush()
+
+        _note("[openmastiff] workspace ready")
+        scan_runs.update_one({"scan_run_id": scan_run_id}, {"$set": {"work_dir": str(work_root)}})
+
         # Write policy snapshot
         policy = load_active_policy()
         policy_bytes = policy.to_json_bytes()
@@ -752,17 +762,20 @@ def start_scan(self, scan_run_id: str) -> None:
 
         # Materialize input
         if source["type"] == "upload":
+            _note("[openmastiff] extracting uploaded archive")
             archive_path = Path(source["blob"]["path"])
             _extract_archive(archive_path, input_dir)
             input_sha256 = source["blob"]["sha256"]
         elif source["type"] == "git":
             g = source["git"]
+            _note("[openmastiff] cloning %s @ %s" % (g.get("repo_url") or "", g.get("ref") or ""))
             input_sha256 = _materialize_git(
                 g["repo_url"],
                 g["ref"],
                 g.get("credential_id"),
                 input_dir,
             )
+            _note("[openmastiff] clone complete %s" % input_sha256[:12])
         else:
             raise ValueError("unknown source type")
 

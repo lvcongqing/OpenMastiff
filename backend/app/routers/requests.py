@@ -30,6 +30,7 @@ from typing import Optional
 
 from app.review_brief import build_review_brief
 from app.role_review_sync import hydrate_request_review_state
+from app.scan_console import build_console_payload
 from app.settings import settings
 from app.worker.celery_app import celery_app
 
@@ -687,6 +688,16 @@ def get_scan_run(scan_run_id: str):
     if not sr:
         raise HTTPException(status_code=404, detail="scan_run not found")
     return _decorate_scan_run(sr)
+
+
+@router.get("/scan-runs/{scan_run_id}/console")
+def get_scan_console(scan_run_id: str):
+    """Live tail of workspace logs.txt while the scan is queued or running."""
+    scan_runs = col("scan_runs")
+    sr = scan_runs.find_one({"scan_run_id": scan_run_id}, {"_id": 0})
+    if not sr:
+        raise HTTPException(status_code=404, detail="scan_run not found")
+    return build_console_payload(sr)
 
 
 @router.get("/scan-runs/{scan_run_id}/artifacts/{name}")

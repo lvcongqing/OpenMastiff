@@ -53,6 +53,8 @@
   - 触发复测（创建新 scan_run）
 - `GET /scan-runs/{scan_run_id}`
   - scan_run 元数据 + summary（或摘要）
+- `GET /scan-runs/{scan_run_id}/console`
+  - 扫描进行中（`queued` / `running`）读取工作区 `logs.txt` 尾部；`live=false` 表示任务已结束
 - `GET /scan-runs/{scan_run_id}/artifacts/{name}`
   - 下载或在线查看输出：`summary.json`、`license.json`、`sbom.*`、`cve.json`、`logs.txt`，以及本次实际识别到的语言报告（Go→`gosec.json`，C/C++→`cppcheck.xml`，Python→`bandit.json`，Java→`pmd.json`，Rust→`cargo-audit.json`，JS/TS→`eslint.json`）
   - 前端路径：`/requests/{request_id}/scans/{scan_run_id}`，按标签切换报告；`?report=` 指定当前报告文件名
